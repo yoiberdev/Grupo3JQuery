@@ -11,20 +11,14 @@ class Producto
     private $id_categoria_producto;
     private $imagen_url;
 
-    public function __construct($codigo, $producto)
+    public function __construct($id_producto, $nombre, $categoria, $precio, $id_categoria_producto, $imagen_url)
     {
-        $this->codigo = $codigo;
-        $this->producto = $producto;
-    }
-
-    public function getCodigo()
-    {
-        return $this->codigo;
-    }
-
-    public function getProducto()
-    {
-        return $this->producto;
+        $this->id_producto = $id_producto;
+        $this->nombre = $nombre;
+        $this->categoria = $categoria;
+        $this->precio = $precio;
+        $this->id_categoria_producto = $id_categoria_producto;
+        $this->imagen_url = $imagen_url;
     }
 
     public function getId_producto()
@@ -55,16 +49,6 @@ class Producto
     public function getImagen_url()
     {
         return $this->imagen_url;
-    }
-
-    public function setCodigo($codigo)
-    {
-        $this->codigo = $codigo;
-    }
-
-    public function setProducto($producto)
-    {
-        $this->producto = $producto;
     }
 
     public function setId_producto($id_producto)
