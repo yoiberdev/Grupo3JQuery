@@ -1,0 +1,434 @@
+CREATE DATABASE db_502;
+
+use db_502;
+
+CREATE TABLE tb_cliente (
+	id_cliente char(5) not null primary key,
+    dni int(8),
+    nombres varchar(50),
+    apellidos varchar(50),
+    email varchar(50),
+    telefono int(9),
+    dirección varchar(100)
+);
+CREATE TABLE tb_categoria (
+	id_categoria char(5) not null primary key,
+    nombre varchar(50)
+);
+
+CREATE TABLE tb_producto (
+	id_producto char(5) not null primary key,
+    producto_id_categoria char(5) not null,
+    nombre varchar(50),
+    precio float,
+    stock_disponible int,
+    fecha_registro date,
+    foreign key (producto_id_categoria) references tb_categoria(id_categoria) ON DELETE CASCADE
+);
+
+CREATE TABLE tb_detalle_venta (
+	id_detalle_venta char(5) not null primary key,
+    detalle_id_cliente char(5) not null,
+    detalle_id_producto char(5) not null,
+    foreign key (detalle_id_cliente) references tb_cliente(id_cliente) ON DELETE CASCADE,
+    foreign key (detalle_id_producto) references tb_producto(id_producto) ON DELETE CASCADE
+);
+
+CREATE TABLE tb_venta (
+	id_venta char(5) not null primary key,
+    cantidad int,
+    fecha_venta date,
+    venta_id_detalle_venta char(5) not null,
+    foreign key (venta_id_detalle_venta) references tb_detalle_venta(id_detalle_venta) ON DELETE CASCADE
+);
+
+-- PROCEDIMIENTOS PARA MOSTRAR
+
+DELIMITER //
+
+CREATE PROCEDURE ObtenerVenta()
+BEGIN
+    SELECT 
+        c.nombres AS Nombre,
+        c.apellidos AS Apellido,
+        p.nombre AS Producto,
+        co.cantidad AS Cantidad,
+        ROUND(co.cantidad * p.precio, 2) AS TotalGastado
+    FROM 
+        tb_cliente c
+    JOIN 
+        tb_detalle_venta dc ON c.id_cliente = dc.detalle_id_cliente
+    JOIN 
+        tb_producto p ON dc.detalle_id_producto = p.id_producto
+    JOIN 
+        tb_venta co ON dc.id_detalle_venta = co.venta_id_detalle_venta;
+END //
+
+DELIMITER ;
+
+
+
+DELIMITER //
+
+CREATE PROCEDURE ObtenerProducto()
+BEGIN
+    SELECT 
+        nombre AS Producto,
+        stock_disponible AS StockDisponible,
+        precio AS Precio
+    FROM 
+        tb_producto;
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE PROCEDURE ObtenerCliente()
+BEGIN
+    SELECT 
+        nombres AS Nombres,
+        apellidos AS Apellidos,
+        dni AS DNI,
+        email AS Email,
+        telefono AS Telefono,
+        dirección AS Dirección
+    FROM 
+        tb_cliente;
+END //
+
+DELIMITER ;
+
+
+-- PROCEDIMIENTOS PARA ELIMINAR
+
+DELIMITER //
+
+CREATE PROCEDURE EliminarCliente(IN cliente_id CHAR(5))
+BEGIN
+    DELETE FROM tb_cliente WHERE id_cliente = cliente_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE EliminarProducto(IN producto_id CHAR(5))
+BEGIN
+    DELETE FROM tb_detalle_venta WHERE detalle_id_producto = producto_id;
+    DELETE FROM tb_producto WHERE id_producto = producto_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE EliminarVenta(IN venta_id CHAR(5))
+BEGIN
+    DELETE FROM tb_detalle_venta WHERE id_detalle_venta = (SELECT venta_id_detalle_venta FROM tb_venta WHERE id_venta = venta_id);
+    DELETE FROM tb_venta WHERE id_venta = venta_id;
+END //
+
+DELIMITER ;
+
+-- PROCEDIMIENTOS PARA EDITAR
+
+DELIMITER //
+
+CREATE PROCEDURE EditarCliente(
+    IN cliente_id CHAR(5),
+    IN dni INT,
+    IN nombres VARCHAR(50),
+    IN apellidos VARCHAR(50),
+    IN email VARCHAR(50),
+    IN telefono INT,
+    IN direccion VARCHAR(100)
+)
+BEGIN
+    UPDATE tb_cliente
+    SET 
+        dni = dni,
+        nombres = nombres,
+        apellidos = apellidos,
+        email = email,
+        telefono = telefono,
+        dirección = direccion
+    WHERE id_cliente = cliente_id;
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE PROCEDURE EditarProducto(
+    IN producto_id CHAR(5),
+    IN producto_id_categoria CHAR(5),
+    IN nombre VARCHAR(50),
+    IN precio FLOAT,
+    IN stock_disponible INT,
+    IN fecha_registro DATE
+)
+BEGIN
+    UPDATE tb_producto
+    SET 
+        producto_id_categoria = producto_id_categoria,
+        nombre = nombre,
+        precio = precio,
+        stock_disponible = stock_disponible,
+        fecha_registro = fecha_registro
+    WHERE id_producto = producto_id;
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE PROCEDURE EditarVenta(
+    IN venta_id CHAR(5),
+    IN cantidad INT,
+    IN fecha_venta DATE
+)
+BEGIN
+    UPDATE tb_venta
+    SET 
+        cantidad = cantidad,
+        fecha_venta = fecha_venta
+    WHERE id_venta = venta_id;
+END //
+
+DELIMITER ;
+
+-- PROCEDIMIENTOS PARA CREAR
+
+DELIMITER //
+
+CREATE PROCEDURE CrearCliente(
+    IN dni INT,
+    IN nombres VARCHAR(50),
+    IN apellidos VARCHAR(50),
+    IN email VARCHAR(50),
+    IN telefono INT,
+    IN direccion VARCHAR(100)
+)
+BEGIN
+    DECLARE nuevo_id_cliente CHAR(5);
+    DECLARE max_id INT;
+    
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id_cliente, 2) AS UNSIGNED)), 0) + 1 INTO max_id FROM tb_cliente;
+    SET nuevo_id_cliente = CONCAT('C', LPAD(max_id, 3, '0'));
+
+    INSERT INTO tb_cliente (id_cliente, dni, nombres, apellidos, email, telefono, dirección) 
+    VALUES (nuevo_id_cliente, dni, nombres, apellidos, email, telefono, direccion);
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE PROCEDURE CrearProducto(
+    IN producto_id_categoria CHAR(5),
+    IN nombre VARCHAR(50),
+    IN precio FLOAT,
+    IN stock_disponible INT,
+    IN fecha_registro DATE
+)
+BEGIN
+    DECLARE nuevo_id_producto CHAR(5);
+    DECLARE max_id INT;
+
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id_producto, 2) AS UNSIGNED)), 0) + 1 INTO max_id FROM tb_producto;
+    SET nuevo_id_producto = CONCAT('P', LPAD(max_id, 3, '0'));
+
+    INSERT INTO tb_producto (id_producto, producto_id_categoria, nombre, precio, stock_disponible, fecha_registro) 
+    VALUES (nuevo_id_producto, producto_id_categoria, nombre, precio, stock_disponible, fecha_registro);
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE PROCEDURE CrearVenta(
+    IN detalle_id_cliente CHAR(5),
+    IN detalle_id_producto CHAR(5),
+    IN cantidad INT,
+    IN fecha_venta DATE
+)
+BEGIN
+    DECLARE nuevo_id_venta CHAR(5);
+    DECLARE nuevo_id_detalle CHAR(5);
+    DECLARE max_venta INT;
+    DECLARE max_detalle INT;
+
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id_venta, 2) AS UNSIGNED)), 0) + 1 INTO max_venta FROM tb_venta;
+    SET nuevo_id_venta = CONCAT('V', LPAD(max_venta, 3, '0'));
+    
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id_detalle_venta, 2) AS UNSIGNED)), 0) + 1 INTO max_detalle FROM tb_detalle_venta;
+    SET nuevo_id_detalle = CONCAT('D', LPAD(max_detalle, 3, '0'));
+    
+    INSERT INTO tb_detalle_venta (id_detalle_venta, detalle_id_cliente, detalle_id_producto) 
+    VALUES (nuevo_id_detalle, detalle_id_cliente, detalle_id_producto);
+
+    INSERT INTO tb_venta (id_venta, cantidad, fecha_venta, venta_id_detalle_venta) 
+    VALUES (nuevo_id_venta, cantidad, fecha_venta, nuevo_id_detalle);
+END //
+
+DELIMITER ;
+
+
+
+-- SP PARA BUSCAR PRODUCTO POR ID categoria
+DELIMITER //
+CREATE PROCEDURE BuscarProductoPorCategoriaId(
+	IN categoria_id CHAR(5)
+)
+BEGIN
+	SELECT p.id_producto, p.nombre, p.precio, p.stock_disponible FROM tb_producto p
+    WHERE p.producto_id_categoria = categoria_id;
+END //
+DELIMITER ;
+
+
+-- SP PARA BUSCAR PRODUCTO POR NOMBRE CATEGORIA
+DELIMITER //
+CREATE PROCEDURE BuscarProductoPorNombreCategoria(
+	IN nombre_categoria VARCHAR(50)
+)
+BEGIN
+	SELECT p.id_producto, p.nombre, p.precio, p.stock_disponible FROM tb_producto p
+    JOIN tb_categoria c ON p.producto_id_categoria = c.id_categoria
+    WHERE c.nombre = nombre_categoria;
+END //
+DELIMITER ;
+
+-- CALL BuscarProductoPorCategoriaId('CA001');
+-- CALL BuscarProductoPorNombreCategoria('Pelotas');
+
+
+-- PROCEDIMIENTO PARA BUSCAR PRODUCTO POR SU NOMBRE
+DELIMITER //
+CREATE PROCEDURE BuscarPorNombreProducto(
+	IN cadena_busqueda VARCHAR(50)
+)
+BEGIN
+	SELECT p.id_producto, p.nombre, p.precio, p.stock_disponible FROM tb_producto p
+    WHERE p.nombre LIKE CONCAT( '%' , cadena_busqueda, '%');
+END //
+DELIMITER ;
+-- CALL BuscarPorNombreProducto('pe');
+
+
+
+-- INSERCIÓN DE DATOS
+
+
+INSERT INTO tb_cliente (id_cliente, dni, nombres, apellidos, email, telefono, dirección) VALUES
+('C001', 12345678, 'Juan', 'Pérez', 'juan.perez@email.com', 987654321, 'Av. Siempre Viva 123'),
+('C002', 87654321, 'María', 'García', 'maria.garcia@email.com', 987654322, 'Calle Falsa 456'),
+('C003', 23456789, 'Luis', 'Martínez', 'luis.martinez@email.com', 987654323, 'Jirón de la Unión 789'),
+('C004', 34567890, 'Ana', 'Lopez', 'ana.lopez@email.com', 987654324, 'Paseo de la República 101'),
+('C005', 45678901, 'Carlos', 'Fernández', 'carlos.fernandez@email.com', 987654325, 'Av. Los Incas 102'),
+('C006', 56789012, 'Laura', 'Sánchez', 'laura.sanchez@email.com', 987654326, 'Calle Lima 103'),
+('C007', 67890123, 'Fernando', 'Rodríguez', 'fernando.rodriguez@email.com', 987654327, 'Av. Tacna 104'),
+('C008', 78901234, 'Sofía', 'Mendoza', 'sofia.mendoza@email.com', 987654328, 'Calle Huancayo 105'),
+('C009', 89012345, 'Jorge', 'Cruz', 'jorge.cruz@email.com', 987654329, 'Av. San Martín 106'),
+('C010', 90123456, 'Elena', 'Rojas', 'elena.rojas@email.com', 987654330, 'Calle Arequipa 107'),
+('C011', 11223344, 'Andrés', 'Salazar', 'andres.salazar@email.com', 987654331, 'Calle Cusco 108'),
+('C012', 22334455, 'Patricia', 'Quispe', 'patricia.quispe@email.com', 987654332, 'Av. Arequipa 109'),
+('C013', 33445566, 'Miguel', 'Gonzales', 'miguel.gonzales@email.com', 987654333, 'Calle Tacna 110'),
+('C014', 44556677, 'Verónica', 'Alvarez', 'veronica.alvarez@email.com', 987654334, 'Av. La Marina 111'),
+('C015', 55667788, 'Raúl', 'Núñez', 'raul.nunez@email.com', 987654335, 'Calle San Juan 112');
+
+INSERT INTO tb_categoria (id_categoria, nombre) VALUES
+('CA001', 'Muñecas'),
+('CA002', 'Juegos de Construcción'),
+('CA003', 'Juguetes de Madera'),
+('CA004', 'Vehículos'),
+('CA005', 'Pelotas'),
+('CA006', 'Rompecabezas'),
+('CA007', 'Juegos de Mesa'),
+('CA008', 'Artículos de Arte'),
+('CA009', 'Figuras de Acción'),
+('CA010', 'Peluches');
+
+INSERT INTO tb_producto (id_producto, producto_id_categoria, nombre, precio, stock_disponible, fecha_registro) VALUES
+('P001', 'CA001', 'Muñeca de Trapo', 45.99, 20, '2024-01-15'),
+('P002', 'CA001', 'Muñeca de Plástico', 29.99, 15, '2024-02-20'),
+('P003', 'CA002', 'Bloques de Construcción', 39.99, 25, '2024-03-10'),
+('P004', 'CA002', 'Set de Lego', 99.99, 10, '2024-04-05'),
+('P005', 'CA003', 'Juego de Madera - Torre', 25.99, 30, '2024-05-12'),
+('P006', 'CA004', 'Auto de Carreras', 59.99, 18, '2024-06-18'),
+('P007'	Fútbol', 19.99, 50, '2024-07-22'),
+('P008', 'CA006', 'Rompecabezas 500 Piezas', 27.99, 22, '2024-08-30'),
+('P009', 'CA007', 'Juego de Mesa - Monopoly', 65.99, 12, '2024-09-10'),
+('P010', 'CA008', 'Set de Pintura', 34.99, 15, '2024-10-01'),
+('P011', 'CA001', 'Muñeca de Vinilo', 39.99, 15, '2024-11-01'),
+('P012', 'CA002', 'Set de Bloques Magnéticos', 54.99, 20, '2024-11-05'),
+('P013', 'CA003', 'Juego de Madera - Puzle', 29.99, 25, '2024-11-10'),
+('P014', 'CA005', 'Pelota de Baloncesto', 34.99, 10, '2024-11-15'),
+('P015', 'CA007', 'Juego de Mesa - Scrabble', 49.99, 18, '2024-11-20');
+
+INSERT INTO tb_detalle_venta (id_detalle_venta, detalle_id_cliente, detalle_id_producto) VALUES
+('D001', 'C001', 'P001'),
+('D002', 'C001', 'P003'),
+('D003', 'C002', 'P002'),
+('D004', 'C003', 'P004'),
+('D005', 'C004', 'P005'),
+('D006', 'C005', 'P006'),
+('D007', 'C006', 'P007'),
+('D008', 'C007', 'P008'),
+('D009', 'C008', 'P009'),
+('D010', 'C009', 'P010'),
+('D011', 'C011', 'P011'),  
+('D012', 'C012', 'P012'),  
+('D013', 'C013', 'P013'),  
+('D014', 'C014', 'P014'),  
+('D015', 'C015', 'P015'); 
+
+INSERT INTO tb_venta (id_venta, cantidad, fecha_venta, venta_id_detalle_venta) VALUES
+('V001', 2, '2024-01-20', 'D001'),
+('V002', 1, '2024-01-25', 'D002'),
+('V003', 3, '2024-02-15', 'D003'),
+('V004', 1, '2024-03-10', 'D004'),
+('V005', 4, '2024-04-01', 'D005'),
+('V006', 2, '2024-05-05', 'D006'),
+('V007', 1, '2024-06-12', 'D007'),
+('V008', 5, '2024-07-15', 'D008'),
+('V009', 2, '2024-08-20', 'D009'),
+('V010', 1, '2024-09-10', 'D010'),
+('V011', 2, '2024-11-25', 'D011'),  
+('V012', 1, '2024-11-26', 'D012'),  
+('V013', 3, '2024-11-27', 'D013'), 
+('V014', 1, '2024-11-28', 'D014'), 
+('V015', 4, '2024-11-29', 'D015');  
+
+-- EJEMPLOS DE LOS PROCEDIMIENTOS
+
+-- ELIMINAR
+-- CALL EliminarCliente('C011');
+-- CALL EliminarProducto('P011');
+-- CALL EliminarVenta('V011');
+
+-- EDITAR
+-- CALL EditarCliente('C011', 12345678, 'Andrés', 'Salazar', 'andres_nuevo@email.com', 987654331, 'Calle Nueva 108');
+-- CALL EditarProducto('P011', 'CA001', 'Muñeca Actualizada', 45.99, 20, '2024-11-01');
+-- CALL EditarVenta('V011', 3, '2024-11-30');
+
+-- CREAR
+-- CALL CrearCliente(12345678, 'Juan', 'Pérez', 'juan.perez@example.com', 987654321, 'Av. Principal 123, Lima, Perú');
+-- CALL CrearProducto('CA001', 'Nuevo Juguete', 29.99, 50, '2024-12-01');
+-- CALL CrearVenta('C001', 'P001', 2, '2024-12-10');
+
+
+
+
+
+
+
+
+
+
