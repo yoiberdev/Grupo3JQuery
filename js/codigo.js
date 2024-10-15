@@ -86,3 +86,19 @@ $("#frm_filtrar_prod #btn_filtrar").on("click", function(e) {
         $("#txt_valor").focus();    
     }
 });
+
+$(document).ready(function() {
+    $.ajax({
+        url: '../controlador/ctr_listar_categorias.php',
+        method: 'GET',
+        success: function(data) {
+            // Suponiendo que data es un arreglo de objetos
+            data.forEach(function(item) {
+                $('#categoria-body').append('<tr><th scope="row">' + item.id + '</th><td>' + item.categoria + '</td></tr>');
+            });
+        },
+        error: function(xhr, status, error) {
+            $('#categoria-body').append('<tr><td colspan="2" class="text-danger">Error al cargar los datos: ' + error + '</td></tr>');
+        }
+    });
+});
