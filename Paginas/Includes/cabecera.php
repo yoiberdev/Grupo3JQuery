@@ -4,3 +4,4 @@
     <title>Document</title>
     <link rel="stylesheet" href="<?=$ruta?>/css/bootstrap/css/bootstrap.css" />
 </head>
+<body>
