@@ -5,7 +5,7 @@ namespace app\Model;
 use app\Interfaces\ClienteInterface;
 use PDO;
 
-class ClienteController extends Conexion implements ClienteInterface
+class ClienteRepository extends Conexion implements ClienteInterface
 {
     public function getAll()
     {

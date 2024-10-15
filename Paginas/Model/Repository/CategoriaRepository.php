@@ -6,7 +6,7 @@ use app\Interfaces\CategoriaInterface;
 use app\Model\Categoria;
 use PDO;
 
-class CategoriaController extends Conexion implements CategoriaInterface
+class CategoriaRepository extends Conexion implements CategoriaInterface
 {
     public function getAll()
     {
